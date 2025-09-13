@@ -44,6 +44,12 @@ public class ContactController {
                 .orElseThrow(() -> new RuntimeException("Contato não encontrado: " + id));
     }
 
+    @GetMapping("/search")
+    public List<Contact> searchContactsByNome(@RequestParam String nome) {
+        return contactRepository.findContactByNome(nome);
+    }
+
+
     /**
      * Método para criar um novo contato.
      * 
@@ -86,5 +92,26 @@ public class ContactController {
     @DeleteMapping("/{id}")
     public void deleteContact(@PathVariable Long id) {
         contactRepository.deleteById(id);
+    }
+
+    @PatchMapping("/{id}")
+    public Contact patchContact(@PathVariable Long id, @RequestBody Contact updatedFields){
+        
+        Contact existingContact = contactRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Nao existe um contato com a id: " + id));
+
+        if(updatedFields.getNome() != null){
+            existingContact.setNome(updatedFields.getNome());
+        }
+        if(updatedFields.getTelefone() != null){
+            existingContact.setTelefone(updatedFields.getTelefone());
+        }
+
+        if(updatedFields.getEmail() != null){
+            existingContact.setEmail(updatedFields.getEmail());
+        }
+
+        return contactRepository.save(existingContact);
+
     }
 }
