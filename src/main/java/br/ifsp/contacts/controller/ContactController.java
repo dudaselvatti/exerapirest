@@ -4,114 +4,82 @@ import br.ifsp.contacts.model.Contact;
 import br.ifsp.contacts.repository.ContactRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+import java.util.Map;
+import br.ifsp.contacts.exceptions.ResourceNotFoundException;
+
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/contacts")
+@Validated
 public class ContactController {
 
-    /**
-     * @Autowired permite que o Spring "injete" automaticamente
-     * uma instância de ContactRepository aqui, 
-     * sem que precisemos criar manualmente.
-     */
     @Autowired
     private ContactRepository contactRepository;
 
-    /**
-     * Método para obter todos os contatos.
-     * 
-     * @GetMapping indica que este método vai responder a chamadas HTTP GET.
-     * Exemplo de acesso: GET /api/contacts
-     */
     @GetMapping
     public List<Contact> getAllContacts() {
         return contactRepository.findAll();
     }
 
-    /**
-     * Método para obter um contato específico pelo seu ID.
-     * 
-     * @PathVariable "amarra" a variável {id} da URL 
-     * ao parâmetro do método.
-     * Exemplo de acesso: GET /api/contacts/1
-     */
-    @GetMapping("/{id}")
+    @GetMapping("{id}")
     public Contact getContactById(@PathVariable Long id) {
-        // findById retorna um Optional, então usamos orElseThrow
         return contactRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Contato não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado: " + id));
     }
 
-    @GetMapping("/search")
-    public List<Contact> searchContactsByNome(@RequestParam String nome) {
-        return contactRepository.findContactByNome(nome);
-    }
-
-
-    /**
-     * Método para criar um novo contato.
-     * 
-     * @PostMapping indica que este método responde a chamadas HTTP POST.
-     * @RequestBody indica que o objeto Contact será preenchido 
-     * com os dados JSON enviados no corpo da requisição.
-     */
     @PostMapping
-    public Contact createContact(@RequestBody Contact contact) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public Contact createContact(@Valid @RequestBody Contact contact) {
         return contactRepository.save(contact);
     }
 
-    /**
-     * Método para atualizar um contato existente.
-     * 
-     * @PutMapping indica que este método responde a chamadas HTTP PUT.
-     * Exemplo de acesso: PUT /api/contacts/1
-     */
     @PutMapping("/{id}")
-    public Contact updateContact(@PathVariable Long id, @RequestBody Contact updatedContact) {
-        // Buscar o contato existente
+    public Contact updateContact(@PathVariable Long id, @Valid @RequestBody Contact updatedContact) {
         Contact existingContact = contactRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Contato não encontrado: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado: " + id));
 
-        // Atualizar os campos
         existingContact.setNome(updatedContact.getNome());
-        existingContact.setTelefone(updatedContact.getTelefone());
         existingContact.setEmail(updatedContact.getEmail());
+        existingContact.setTelefone(updatedContact.getTelefone());
+        existingContact.setAddresses(updatedContact.getAddresses());
 
-        // Salvar alterações
         return contactRepository.save(existingContact);
     }
 
-    /**
-     * Método para excluir um contato pelo ID.
-     * 
-     * @DeleteMapping indica que este método responde a chamadas HTTP DELETE.
-     * Exemplo de acesso: DELETE /api/contacts/1
-     */
+    @PatchMapping("/{id}")
+    public Contact updateContactPartial(@PathVariable Long id, @RequestBody Map<String, String> updates) {
+        Contact contact = contactRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Contato não encontrado: " + id));
+
+        updates.forEach((key, value) -> {
+            switch (key) {
+                case "nome":
+                    contact.setNome(value);
+                    break;
+                case "telefone":
+                    contact.setTelefone(value);
+                    break;
+                case "email":
+                    contact.setEmail(value);
+                    break;
+            }
+        });
+
+        return contactRepository.save(contact);
+    }
+
     @DeleteMapping("/{id}")
     public void deleteContact(@PathVariable Long id) {
         contactRepository.deleteById(id);
     }
 
-    @PatchMapping("/{id}")
-    public Contact patchContact(@PathVariable Long id, @RequestBody Contact updatedFields){
-        
-        Contact existingContact = contactRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Nao existe um contato com a id: " + id));
-
-        if(updatedFields.getNome() != null){
-            existingContact.setNome(updatedFields.getNome());
-        }
-        if(updatedFields.getTelefone() != null){
-            existingContact.setTelefone(updatedFields.getTelefone());
-        }
-
-        if(updatedFields.getEmail() != null){
-            existingContact.setEmail(updatedFields.getEmail());
-        }
-
-        return contactRepository.save(existingContact);
-
+    @GetMapping("/search")
+    public List<Contact> searchContactsByName(@RequestParam String name) {
+        return contactRepository.findContactByNome(name);
     }
 }
