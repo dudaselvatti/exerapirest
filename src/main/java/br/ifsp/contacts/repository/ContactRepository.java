@@ -6,7 +6,5 @@ import java.util.List;
 
 
 public interface ContactRepository extends JpaRepository<Contact, Long> {
-    
-    List<Contact> findContactByNome(String nome);
-
+    List<Contact> findByNomeContainingIgnoreCase(String nome);
 }
