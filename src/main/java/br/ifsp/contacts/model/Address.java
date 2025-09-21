@@ -62,7 +62,6 @@ public class Address {
     public String getEstado() {
         return estado;
     }
-
     public void setEstado(String estado) {
         this.estado = estado;
     }

@@ -16,8 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-
-
 @Entity
 public class Contact {
     
@@ -30,6 +28,7 @@ public class Contact {
     
     @NotBlank(message = "O email não pode estar vazio")
     @Email(message = "Formato de email inválido")
+
     private String email;
     
     @NotBlank(message = "O telefone não pode estar vazio")
